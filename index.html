@@ -1,0 +1,128 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shane Spreed</title>
+<style>
+body.dark, body.dark * {
+	color:#aaa;
+	background-color:#000;
+}
+#outp {
+	font-size:60pt;
+	display:inline;
+	left: 50%;
+	margin-left: -200px;
+	position:relative;
+}
+#outpstack {
+	color:firebrick;
+	width:100px;
+	text-align:right;
+	display:inline-block;
+}
+#outpword {
+	text-align:left;
+}
+</style>
+LightSpreeder.
+<p>WPM: <input id=wpm type=number value=300 min=60></p>
+<p>Pause between words: <input type=checkbox id=space></p>
+<p>Dark: <input type=checkbox id=dark></p>
+<p>Length factor: <input id=lenfacp type=number value=0.1 min=0 max=1 step=0.05></p>
+<p>Pos: <input id=inpos type=number value=0></p>
+<p>Input:</p><textarea id=inp cols=50 rows=10>Chapter Thirty One
+
+Since Charles Darwin first introduced the concept of evolution in his 1859 book, The Origin of Species, Christian fundamentalists have rejected this scientific theory, contending that it conflicts with a literal reading of the Bible. This Biblical-based tenet regarding the earth's origin is commonly known as "creationism," and its followers, "creationists," have developed various strategies that endeavor to remove the teaching of evolution from public schools and incorporate creationism into science curricula.
+
+This debate between evolution and creationism began in the nineteenth century, and gained national attention when the religious movement known as fundamentalism clashed with the rising acceptance of Darwinism. Since the central premises of fundamentalism are a literal interpretation of the Bible and an inerrancy of Scripture, fundamentalists viewed these scientific developments as direct attacks on the Bible and its teachings regarding the origin of humans. Fundamentalists further feared that acceptance of Darwinism would cause a decline in traditional values, and this concern had a pervasive effect on the teaching of biology in public schools. Three states went so far as to enact laws prohibiting the teaching of evolution in public schools, and local school boards and teachers across the nation used textbooks that avoided the topic entirely. For at the time, this practice was largely accepted, and it almost appeared that the evolution/creationism debate had been quieted.
+
+In 1925, John Scopes was arrested for teaching evolution in a public high school in Dayton, Tennessee, in violation of a Tennessee statute making the teaching of evolution in schools a criminal offense. More specifically, the statute prohibited public school teachers from presenting any theory that denied the story of the divine creation of humans as taught in the Bible and, instead, maintained that humans have descended from a lower order of animals. The Tennessee Supreme Court held that Tennessee had the power as an employer, speaking through legislation, to determine the action of its teacher employees. Thus, the Tennessee Supreme Court found that because Tennessee has the power to authorize and enforce contracts for public services, it may require that those services be rendered in a manner consistent with the public policy of the state (i.e., certain curricula in schools).
+
+Although Scopes appeared to be a victory for the fundamentalists, it seems to have been the last clear ruling in favor of the religious movement. Enactment of anti-evolution legislation ceased in 1928; however, creationists shifted their concentration to local communities and successfully exerted pressure on school boards, publishers, and teachers alike to omit evolution from the curriculum for over thirty years. As fundamentalists began to place less emphasis on the battle against evolution and became preoccupied with combating new evils that arose after World War II, the federal government began clamoring for increased emphasis on evolutionary theory in schools. Advancements in technology, new scientific discoveries in the 1960s, such as the launching of Sputnik, and greater government interest in improving the United States's strength and achievement in scientific fields created a new demand for the development of biology texts that incorporated the theory of evolution. This new emphasis on science produced a resurgence of fundamentalist concern that the teaching of evolution would create a loss of traditional societal values.
+
+Now, over seventy-five years after the infamous “Scopes Monkey Trial,” the controversial confrontation over science, religion, law, and education can still be heard in legislative halls, courtrooms, schools, and homes across the nation. Whether the incorporation of certain religiously motivated theories of the earth's origin into public schools violates the fundamental separation between church and state is a question that continues to plague this country today.
+	
+</textarea>
+<button onclick=read()>read</button><button onclick="clearTimeout(interval)">stop</button><br>
+<div id=outp><span id=outpstack></span> <span id=outpword>word</span></div>
+<script>
+var text;
+var interval;
+var pos;
+var thingStack;
+var lenfac=0.1;
+function read() {
+	text=inp.value.replace('\n','   ').split(/[\s]/);
+	pos = parseInt(inpos.value);
+	lenfac = parseFloat(lenfacp.value);
+	if(lenfac<0)lenfac=0;if(lenfac>1)lenfac=1;
+	lenfacp.value=lenfac;
+	thingStack=[];
+	//clearInterval(interval);
+	//interval = setInterval(nextWord,60000/wpm.value);
+	clearTimeout(interval);
+	interval=setTimeout(nextWord,60000/wpm.value);
+}
+function nextWord() {
+	if(pos==text.length) {
+		clearInterval(interval);	
+	} else {
+		var word=text[pos]||"";
+		pos+=space.checked?0.5:1;
+		inpos.value=pos;
+		interval=setTimeout(nextWord,60000/wpm.value * (1-lenfac+((word.length||10)*lenfac/5)));
+		if(word.length==0) return;
+		while(word.search(inRegex)==0) {
+			thingStack.push(word[0]);
+			var word = word.substring(1)
+		}	
+		outpstack.innerText=thingStack.join("");
+		outpword.innerText=word;
+
+		var word=word.replace(/[.,]/,'');
+		var index=word.search(ouRegex);
+		while(word.length>0&&(index===0||index===word.length-1)) {
+			var ouchar=word[index];
+			var inchar=transform(ouchar);
+			if(ouchar==inchar&&index>0&&index<word.length-1) {
+				//ignore unsided chars in the middle of the word
+				continue;
+			}
+			word=word.substring(0,index)+word.substring(index+1);
+			if(thingStack.peek()==inchar) {
+				thingStack.pop();
+			} else {
+				thingStack.push(inchar);
+			}
+			index=word.search(ouRegex);
+		}
+		var marg=-outp.offsetWidth*0.3+"px";
+		//outpword.style.marginLeft=marg;//align 30% to the left
+		outpstack.style.marginLeft=marg;
+
+		
+	}
+
+}
+
+var inchars="([{\"“";
+var ouchars=")]}\"”";
+
+
+String.prototype.escapeRegex = function() {
+	return this.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+var inRegex=new RegExp("["+inchars.escapeRegex()+"]");
+var ouRegex=new RegExp("["+ouchars.escapeRegex()+"]");
+function transform(c) {
+	return inchars[ouchars.indexOf(c)];
+}
+outpstack.onclick=function() { thingStack.pop();}
+dark.onchange=function() { 
+	if(this.checked) 
+		document.body.classList.add("dark");
+	else document.body.classList.remove("dark");
+}
+
+Array.prototype.peek=function() {if (this.length>0) return this[this.length-1];}
+</script>
